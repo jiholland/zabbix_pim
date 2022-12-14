@@ -1,0 +1,100 @@
+---
+zabbix_export:
+  version: '6.0'
+  date: '2022-12-14T12:13:13Z'
+  groups:
+    -
+      uuid: 57b7ae836ca64446ba2c296389c009b7
+      name: Templates/Modules
+  templates:
+    -
+      uuid: 1da0b38f4f4e4b2e8506956f28e4ad15
+      template: PIM-SNMP
+      name: PIM-SNMP
+      description: |
+        Template for monitoring the PIM process by SNMP.
+
+        Tested on Cisco Nexus 9000 Series.
+
+        Jørn Ivar Holland
+      groups:
+        -
+          name: Templates/Modules
+      discovery_rules:
+        -
+          uuid: 661bbddd79474318a45ec9f460b1d3db
+          name: 'PIM interfaces'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#PIM_IF_IP},1.3.6.1.3.61.1.1.2.1.2,{#PIM_IF_DR},1.3.6.1.3.61.1.1.2.1.5]'
+          key: pimIf
+          delay: 1h
+          description: 'Discover the IP address of the PIM interface and the Designated Router on this PIM interface.'
+          item_prototypes:
+            -
+              uuid: 90930f0fdfbf44cda99d11b27be89455
+              name: 'PIM interface {#PIM_IF_IP} mode'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.3.61.1.1.2.1.4.{#SNMPINDEX}'
+              key: 'pimInterfaceMode[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              description: 'The configured mode of this PIM interface.'
+              valuemap:
+                name: pimInterfaceMode
+              tags:
+                -
+                  tag: Application
+                  value: PIM
+              trigger_prototypes:
+                -
+                  uuid: 02424708af1c45ff9c0fc9192898d553
+                  expression: '(last(/PIM-SNMP/pimInterfaceMode[{#SNMPINDEX}],#1)<>last(/PIM-SNMP/pimInterfaceMode[{#SNMPINDEX}],#2))=1'
+                  name: 'PIM interface {#PIM_IF_IP} changed mode'
+                  priority: AVERAGE
+                  description: 'Mode changed for PIM interface {#PIM_IF_IP}'
+                  tags:
+                    -
+                      tag: scope
+                      value: availability
+            -
+              uuid: 6315fc272ad640ea844060acc1c5cd79
+              name: 'PIM interface {#PIM_IF_IP} status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.3.61.1.1.2.1.7.{#SNMPINDEX}'
+              key: 'pimInterfaceStatus[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              description: 'The status of this entry.'
+              tags:
+                -
+                  tag: Application
+                  value: PIM
+              trigger_prototypes:
+                -
+                  uuid: 2c65d466a1244f9299d75b47451c4ed1
+                  expression: '(last(/PIM-SNMP/pimInterfaceStatus[{#SNMPINDEX}],#1)<>last(/PIM-SNMP/pimInterfaceStatus[{#SNMPINDEX}],#2))=1'
+                  name: 'PIM interface {#PIM_IF_IP} changed status'
+                  priority: WARNING
+                  description: 'Status changed for PIM interface {#PIM_IF_IP}'
+                  tags:
+                    -
+                      tag: scope
+                      value: availability
+      tags:
+        -
+          tag: class
+          value: network
+      valuemaps:
+        -
+          uuid: c9833f84b8ff4325aec8ede606891f0e
+          name: pimInterfaceMode
+          mappings:
+            -
+              value: '1'
+              newvalue: dense
+            -
+              value: '2'
+              newvalue: sparse
+            -
+              value: '3'
+              newvalue: sparseDense
